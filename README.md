@@ -5,7 +5,7 @@ SDK для интеграции с Kaspi QR API на PHP.
 ## Установка
 
 ```bash
-composer require burcev-alex/kaspi-qr-sdk
+composer require allitvinov-working/kaspi-qr-sdk
 ```
 
 ## Быстрый старт
