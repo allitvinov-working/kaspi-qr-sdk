@@ -18,7 +18,7 @@ final class Partner extends AbstractRequest
     public function tradePoints(string $companyBin): array
     {
         $url = 'partner/tradepoints';
-        if($this->scheme === KaspiScheme::STRONG->value){
+        if($this->scheme === KaspiScheme::STRONG){
             $url .= '/'.$companyBin;
         }
         $httpResponse = $this->makeRequest(

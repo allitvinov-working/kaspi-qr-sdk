@@ -64,7 +64,7 @@ final class CallbackResponse
 	/** @return string */
 	public function getStatus(): string
 	{
-		return $this->status ?? KaspiSystem::STATUS_CREATED->value;
+		return $this->status ?? KaspiSystem::STATUS_CREATED;
 	}
 
 	public function setAmount(float $price): void

@@ -2,9 +2,9 @@
 
 namespace KaspiQrSdk;
 
-enum KaspiScheme: string
+class KaspiScheme
 {
-	case EASY = 'r1';
-	case MEDIUM = 'r2';
-	case STRONG = 'r3';
-} 
+    public const EASY = 'r1';
+    public const MEDIUM = 'r2';
+    public const STRONG = 'r3';
+}

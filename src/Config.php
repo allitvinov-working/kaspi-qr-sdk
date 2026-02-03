@@ -11,7 +11,7 @@ class Config
 {
 	private string $organizationBin;
 	private string $deviceToken;
-	private KaspiScheme $scheme;
+	private string $scheme;
 	private string $apiKey;
 	private string $baseDomain;
 	private ?string $caPath = null;
@@ -21,18 +21,17 @@ class Config
 	private ?LoggerInterface $logger = null;
 	private bool $testMode = false;
 
-	/**
-	 * @param string $organizationBin
-	 * @param string $deviceToken
-	 * @param KaspiScheme $scheme
-	 * @param string $apiKey
-	 * @param string $baseDomain
-	 * @throws \InvalidArgumentException
-	 */
+    /**
+     * @param string $organizationBin
+     * @param string $deviceToken
+     * @param string $scheme
+     * @param string $apiKey
+     * @param string $baseDomain
+     */
 	public function __construct(
 		string $organizationBin,
 		string $deviceToken,
-		KaspiScheme $scheme,
+		string $scheme,
 		string $apiKey,
 		string $baseDomain
 	) {
@@ -70,14 +69,18 @@ class Config
 		$this->deviceToken = $v;
 	}
 
-	/** @return KaspiScheme */
-	public function getScheme(): KaspiScheme
+    /**
+     * @return string
+     */
+	public function getScheme(): string
 	{
 		return $this->scheme;
 	}
 
-	/** @param KaspiScheme $v */
-	public function setScheme(KaspiScheme $v): void
+    /**
+     * @param string $v
+     */
+	public function setScheme(string $v): void
 	{
 		$this->scheme = $v;
 	}

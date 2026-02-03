@@ -2,7 +2,7 @@
 
 namespace KaspiQrSdk;
 
-enum KaspiSystem: string
+class KaspiSystem: string
 {
-	case STATUS_CREATED = 'CREATED';
+    public const STATUS_CREATED = 'CREATED';
 } 

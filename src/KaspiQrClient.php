@@ -27,8 +27,11 @@ final class KaspiQrClient
 
 	public function __construct(Config $config)
 	{
-		$this->scheme = $config->getScheme()->value;
-		$this->port = $this->schemeOptions[$config->getScheme()->value]['port'];
+		$this->scheme = $config->getScheme();
+        if (!isset($this->schemeOptions[$this->scheme])) {
+            throw new \InvalidArgumentException("Invalid scheme: {$this->scheme}");
+        }
+		$this->port = $this->schemeOptions[$config->getScheme()]['port'];
 		$client = new Client(array_merge([
 			'base_uri' => $this->collectUrl($config->getBaseDomain()),
 			'headers' => $this->getHeaders($config->getApiKey()),
@@ -76,7 +79,7 @@ final class KaspiQrClient
 
 	protected function getSslCertificate(?string $caPath, ?string $certPath, ?string $keyPath, ?string $keyPass, bool $testMode = false): array
 	{
-		if ($this->scheme !== KaspiScheme::STRONG->value) {
+		if ($this->scheme !== KaspiScheme::STRONG) {
 			return $testMode ? ['verify' => false] : [];
 		}
 		if (!$caPath || !$certPath || !$keyPath) {

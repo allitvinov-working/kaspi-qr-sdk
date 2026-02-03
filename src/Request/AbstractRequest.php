@@ -126,7 +126,7 @@ abstract class AbstractRequest
 
 	protected function getPrepareData(array $params): array
 	{
-		if ($this->getScheme() === KaspiScheme::STRONG->value) {
+		if ($this->getScheme() === KaspiScheme::STRONG) {
 			$companyBin = $this->getOrganizationBin();
 			if (is_null($companyBin)) {
 				throw new KaspiSdkException('OrganizationBin is required for STRONG scheme');
