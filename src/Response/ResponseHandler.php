@@ -12,7 +12,10 @@ class ResponseHandler
 {
     const HTTP_INTERNAL_SERVER_ERROR = 500;
 
-    private ?ResponseInterface $response;
+    /**
+     * @var ResponseInterface|null
+     */
+    private $response;
 
     public function __construct(?ResponseInterface $response)
     {
@@ -21,18 +24,21 @@ class ResponseHandler
 
     public function getStatusCode(): int
     {
-        return $this->response?->getStatusCode() ?? self::HTTP_INTERNAL_SERVER_ERROR;
+        if ($this->response !== null) {
+            return $this->response->getStatusCode();
+        }
+
+        return self::HTTP_INTERNAL_SERVER_ERROR;
     }
 
     public function getContents(): string
     {
-        if(!is_null($this->response)){
+        if ($this->response !== null) {
             $contents = $this->response->getBody()->getContents();
             $this->response->getBody()->rewind();
             return $contents;
-        }else{
-            return '';
         }
+
+        return '';
     }
 }
-

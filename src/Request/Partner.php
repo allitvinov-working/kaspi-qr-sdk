@@ -8,6 +8,7 @@ use KaspiQrSdk\Response\DeviceRegisterResponse;
 use KaspiQrSdk\Response\TradePointResponse;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Request;
+use KaspiQrSdk\Config;
 
 final class Partner extends AbstractRequest
 {
@@ -15,17 +16,22 @@ final class Partner extends AbstractRequest
      * @return array<int, TradePointResponse>
      * @throws \Exception
      */
-    public function tradePoints(string $companyBin): array
+    public function tradePoints(Config $config): array
     {
         $url = 'partner/tradepoints';
         if($this->scheme === KaspiScheme::STRONG){
-            $url .= '/'.$companyBin;
+            $url .= '/'.$config->getOrganizationBin();
         }
+        $headers = ['Content-type' => 'application/json'];
+        if($this->scheme === KaspiScheme::EASY) {
+            $headers['Api-Key'] = $config->getApiKey();
+        }
+
         $httpResponse = $this->makeRequest(
             new Request(
                 'GET',
                 $this->getBaseUrl($url),
-                ['Content-type' => 'application/json']
+                $headers
             )
         );
 
