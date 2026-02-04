@@ -24,6 +24,7 @@ abstract class AbstractRequest
 	protected string $baseUrl;
 	protected ?string $organizationBin;
 	protected ?string $deviceToken;
+    protected ?string $apiKey;
 	protected Client $client;
 	protected bool $debugMode;
 	protected ?LoggerInterface $logger;
@@ -34,6 +35,7 @@ abstract class AbstractRequest
 		string $scheme,
 		?string $organizationBin,
 		?string $deviceToken,
+        ?string $apiKey = null,
 		?LoggerInterface $logger = null
 	) {
 		$this->client = $client;
@@ -42,6 +44,7 @@ abstract class AbstractRequest
 		$this->baseUrl = $baseUrl;
 		$this->organizationBin = $organizationBin;
 		$this->deviceToken = $deviceToken;
+        $this->apiKey = $apiKey;
 		$this->logger = $logger;
 	}
 
@@ -97,6 +100,11 @@ abstract class AbstractRequest
 	{
 		return $this->baseUrl . "/" . $path;
 	}
+
+    public function getApiKey(): ?string
+    {
+        return $this->apiKey;
+    }
 
 	private function getMessageByStatusCode(int $statusCode): ?string
 	{

@@ -57,6 +57,7 @@ final class KaspiQrClient
 			$this->scheme,
 			$config->getOrganizationBin(),
 			$config->getDeviceToken(),
+            $config->getApiKey(),
 			$config->getLogger()
 		);
 		$this->emulator = new Emulator(

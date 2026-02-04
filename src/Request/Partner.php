@@ -16,15 +16,15 @@ final class Partner extends AbstractRequest
      * @return array<int, TradePointResponse>
      * @throws \Exception
      */
-    public function tradePoints(Config $config): array
+    public function tradePoints(): array
     {
         $url = 'partner/tradepoints';
         if($this->scheme === KaspiScheme::STRONG){
-            $url .= '/'.$config->getOrganizationBin();
+            $url .= '/'. $this->getOrganizationBin();
         }
         $headers = ['Content-type' => 'application/json'];
         if($this->scheme === KaspiScheme::EASY) {
-            $headers['Api-Key'] = $config->getApiKey();
+            $headers['Api-Key'] = $this->getApiKey();
         }
 
         $httpResponse = $this->makeRequest(
