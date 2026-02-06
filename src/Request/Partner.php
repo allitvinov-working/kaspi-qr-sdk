@@ -2,66 +2,61 @@
 
 namespace KaspiQrSdk\Request;
 
-use KaspiQrSdk\Request\AbstractRequest;
 use KaspiQrSdk\KaspiScheme;
 use KaspiQrSdk\Response\DeviceRegisterResponse;
 use KaspiQrSdk\Response\TradePointResponse;
-use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Request;
-use KaspiQrSdk\Config;
 
 final class Partner extends AbstractRequest
 {
     /**
+     * Получение списка торговых точек партнера
      * @return array<int, TradePointResponse>
-     * @throws \Exception
      */
     public function tradePoints(): array
     {
         $url = 'partner/tradepoints';
-        if($this->scheme === KaspiScheme::STRONG){
-            $url .= '/'. $this->getOrganizationBin();
-        }
-        $headers = ['Content-type' => 'application/json'];
-        if($this->scheme === KaspiScheme::EASY) {
-            $headers['Api-Key'] = $this->getApiKey();
+
+        // Для STRONG схемы добавляем organizationBin в URL
+        if ($this->scheme === KaspiScheme::STRONG) {
+            if (is_null($this->organizationBin)) {
+                throw new \KaspiQrSdk\Exception\KaspiSdkException(
+                    'OrganizationBin is required for STRONG scheme'
+                );
+            }
+            $url .= '/' . $this->organizationBin;
         }
 
         $httpResponse = $this->makeRequest(
             new Request(
                 'GET',
                 $this->getBaseUrl($url),
-                $headers
+                ['Content-type' => 'application/json']
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (tradePoints)", $httpResponse);
+        if ($this->debugMode) {
+            $this->logger->debug("Response (tradePoints)", $httpResponse);
         }
 
-        $result = [];
-        foreach($httpResponse['Data'] as $item){
-            $result[] = TradePointResponse::fromResponse($item);
-        }
-
-        return $result;
+        return array_map(
+            static fn($item) => TradePointResponse::fromResponse($item),
+            $httpResponse['Data']
+        );
     }
 
-	/**
-	 * Registers a device with the given identifier and trade point ID.
-	 *
-	 * @param string $deviceId The unique identifier of the device to be registered.
-	 * @param int $tradePointId The ID of the trade point with which the device is associated.
-	 * @return DeviceRegisterResponse The response object containing the registration details.
-	 */
-	public function register(string $deviceId, int $tradePointId): DeviceRegisterResponse
+    /**
+     * Регистрация устройства
+     */
+    public function register(string $deviceId, int $tradePointId): DeviceRegisterResponse
     {
         $data = [
             'DeviceId' => $deviceId,
             'TradePointId' => $tradePointId
         ];
-        if($this->debugMode){
-            $this->getLogger()->debug("Request (device/register)", $data);
+
+        if ($this->debugMode) {
+            $this->logger->debug("Request (device/register)", $data);
         }
 
         $httpResponse = $this->makeRequest(
@@ -73,29 +68,35 @@ final class Partner extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (device/register)", $httpResponse);
+        if ($this->debugMode) {
+            $this->logger->debug("Response (device/register)", $httpResponse);
         }
 
         return DeviceRegisterResponse::fromResponse($httpResponse);
     }
 
-	/**
-	 * Deletes a device using the provided device token.
-	 *
-	 * @param string $deviceToken The device token identifying the device to delete.
-	 * @return bool Returns true if the device was successfully deleted.
-	 */
-	public function delete(string $deviceToken): bool
+    /**
+     * Удаление устройства
+     */
+    public function delete(string $deviceToken): bool
     {
-        $data = [
-            'DeviceToken' => $deviceToken
-        ];
-        if($this->debugMode){
-            $this->getLogger()->debug("Request (device/delete)", $data);
+        $data = ['DeviceToken' => $deviceToken];
+
+        // Для STRONG схемы добавляем OrganizationBin
+        if ($this->scheme === KaspiScheme::STRONG) {
+            if (is_null($this->organizationBin)) {
+                throw new \KaspiQrSdk\Exception\KaspiSdkException(
+                    'OrganizationBin is required for STRONG scheme'
+                );
+            }
+            $data['OrganizationBin'] = $this->organizationBin;
         }
 
-        $httpResponse = $this->makeRequest(
+        if ($this->debugMode) {
+            $this->logger->debug("Request (device/delete)", $data);
+        }
+
+        $this->makeRequest(
             new Request(
                 'POST',
                 $this->getBaseUrl('device/delete'),
@@ -104,8 +105,8 @@ final class Partner extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (device/delete)", $httpResponse);
+        if ($this->debugMode) {
+            $this->logger->debug("Response (device/delete)", ['success' => true]);
         }
 
         return true;

@@ -2,9 +2,9 @@
 
 namespace KaspiQrSdk;
 
-class KaspiScheme
+final class KaspiScheme
 {
-    public const EASY = 'r1';
-    public const MEDIUM = 'r2';
-    public const STRONG = 'r3';
+    public const EASY = 'r1';     // Первая схема — облегчённая
+    public const STANDARD = 'r2'; // Вторая схема — стандартная
+    public const STRONG = 'r3';   // Третья схема — усиленная безопасность
 }

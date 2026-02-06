@@ -2,39 +2,36 @@
 
 namespace KaspiQrSdk\Request;
 
-use KaspiQrSdk\Request\AbstractRequest;
 use KaspiQrSdk\KaspiScheme;
 use KaspiQrSdk\Response\CancelResponse;
 use KaspiQrSdk\Response\InvoiceResponse;
 use KaspiQrSdk\Response\PaymentInfoResponse;
 use KaspiQrSdk\Response\RefundResponse;
-use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Request;
 
-/**
- * The Merchant class handles requests related to QR payments, including the creation
- * of invoices, retrieval of payment information, cancellation of payments, and processing refunds.
- * This class extends AbstractRequest and utilizes reusable functionalities for making HTTP requests.
- */
 final class Merchant extends AbstractRequest
 {
-	/**
-	 * Creates an invoice request and returns the corresponding response.
-	 *
-	 * @param string $accountNumber The account number associated with the invoice.
-	 * @param float $price The amount for the invoice.
-	 * @param bool $isMobile Indicates whether the request is for a mobile-specific URL. Defaults to false.
-	 * @return InvoiceResponse The response object containing the details of the created invoice.
-	 */
-	public function create(string $accountNumber, float $price, bool $isMobile = false): InvoiceResponse
+    /**
+     * Создание QR-токена или ссылки на оплату
+     *
+     * @param float $amount Сумма покупки
+     * @param string|null $externalId Идентификатор покупки в системе Партнера
+     * @param bool $isMobile true для создания ссылки, false для QR-токена
+     */
+    public function create(float $amount, ?string $externalId = null, bool $isMobile = false): InvoiceResponse
     {
         $data = [
-            'DeviceToken' => $this->getDeviceToken(),
-            'Amount' => $price,
-            'ExternalId' => $accountNumber
+            'DeviceToken' => $this->deviceToken,
+            'Amount' => $amount,
         ];
-        if($this->debugMode){
-            $this->getLogger()->debug("Request (qr/create)", $data);
+
+        if ($externalId !== null) {
+            $data['ExternalId'] = $externalId;
+        }
+
+        if ($this->debugMode) {
+            $endpoint = $isMobile ? 'qr/create-link' : 'qr/create';
+            $this->logger->debug("Request ({$endpoint})", $data);
         }
 
         $httpResponse = $this->makeRequest(
@@ -46,88 +43,113 @@ final class Merchant extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (qr/create)", $httpResponse);
+        if ($this->debugMode) {
+            $this->logger->debug("Response (qr/create)", $httpResponse);
         }
 
         return InvoiceResponse::fromResponse($httpResponse);
     }
 
-	/**
-	 * Retrieves payment information for a given payment identifier.
-	 *
-	 * @param string $uuid The unique identifier of the payment whose details are to be retrieved.
-	 * @return PaymentInfoResponse An object containing the details of the payment.
-	 */
-	public function getPaymentInfo(string $uuid): PaymentInfoResponse
+    /**
+     * Получение статуса операции
+     */
+    public function getPaymentInfo(int $qrPaymentId): PaymentInfoResponse
     {
-        if($this->debugMode){
-            $this->getLogger()->debug("Request (getPaymentInfo)", ['qrPaymentId' => $uuid]);
+        if ($this->debugMode) {
+            $this->logger->debug("Request (payment/status)", ['qrPaymentId' => $qrPaymentId]);
         }
 
         $httpResponse = $this->makeRequest(
             new Request(
                 'GET',
-                $this->getBaseUrl('payment/status/'.$uuid),
+                $this->getBaseUrl('payment/status/' . $qrPaymentId),
                 ['Content-type' => 'application/json']
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (getPaymentInfo)", $httpResponse);
+        if ($this->debugMode) {
+            $this->logger->debug("Response (payment/status)", $httpResponse);
         }
 
         return PaymentInfoResponse::fromResponse($httpResponse);
     }
 
-	/**
-	 * Cancels a payment associated with the specified invoice identifier.
-	 *
-	 * @param string $invoiceId The unique identifier of the invoice to be canceled.
-	 * @return CancelResponse An object representing the response of the cancel operation.
-	 */
-	public function cancel(string $invoiceId): CancelResponse
+    /**
+     * Получение деталей операции (для схем 2 и 3)
+     */
+    public function getPaymentDetails(int $qrPaymentId): array
     {
-        $data = [
-            'DeviceToken' => $this->getDeviceToken(),
-            'QrPaymentId' => $invoiceId
-        ];
-        if($this->debugMode){
-            $this->getLogger()->debug("Request (remote/cancel)", $data);
+        $url = sprintf(
+            'payment/details?QrPaymentId=%d&DeviceToken=%s',
+            $qrPaymentId,
+            $this->deviceToken
+        );
+
+        if ($this->debugMode) {
+            $this->logger->debug("Request (payment/details)", [
+                'qrPaymentId' => $qrPaymentId,
+                'deviceToken' => $this->deviceToken
+            ]);
         }
 
         $httpResponse = $this->makeRequest(
             new Request(
-                'POST',
-                $this->getBaseUrl('remote/cancel'),
-                ['Content-type' => 'application/json'],
-                json_encode($this->getPrepareData($data))
+                'GET',
+                $this->getBaseUrl($url),
+                ['Content-type' => 'application/json']
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (remote/cancel)", $httpResponse);
+        if ($this->debugMode) {
+            $this->logger->debug("Response (payment/details)", $httpResponse);
         }
 
-        return CancelResponse::fromResponse($httpResponse);
+        return $httpResponse['Data'];
     }
 
-	/**
-	 * Initiates a refund process for a given invoice with a specified amount.
-	 *
-	 * @param string $invoiceId The unique identifier of the invoice to be refunded.
-	 * @param float $price The amount to be refunded for the specified invoice.
-	 * @return RefundResponse An object containing the response of the refund operation.
-	 */
-	public function refund(string $invoiceId, float $price): RefundResponse
+    /**
+     * Возврат покупки (полный или частичный)
+     *
+     * Для схемы 2 требуется QrReturnId (возврат с участием покупателя)
+     * Для схемы 3 QrReturnId не требуется (возврат без участия покупателя)
+     */
+    public function refund(int $qrPaymentId, float $amount, ?int $qrReturnId = null): RefundResponse
     {
+        // Для схемы EASY возврат через API невозможен
+        if ($this->scheme === KaspiScheme::EASY) {
+            throw new KaspiSdkException(
+                'Refund is not available via API for EASY scheme. Use Kaspi Pay app instead.'
+            );
+        }
+
         $data = [
-            'DeviceToken' => $this->getDeviceToken(),
-            'QrPaymentId' => $invoiceId,
-            'Amount' => $price,
+            'DeviceToken' => $this->deviceToken,
+            'QrPaymentId' => $qrPaymentId,
+            'Amount' => $amount,
         ];
-        if($this->debugMode){
-            $this->getLogger()->debug("Request (payment/return)", $data);
+
+        // Для схемы STANDARD требуется QrReturnId (возврат с участием покупателя)
+        if ($this->scheme === KaspiScheme::STANDARD) {
+            if ($qrReturnId === null) {
+                throw new KaspiSdkException(
+                    'QrReturnId is required for STANDARD scheme refund'
+                );
+            }
+            $data['QrReturnId'] = $qrReturnId;
+        }
+
+        // Для схемы STRONG добавляем OrganizationBin (возврат без участия покупателя)
+        if ($this->scheme === KaspiScheme::STRONG) {
+            if (is_null($this->organizationBin)) {
+                throw new KaspiSdkException(
+                    'OrganizationBin is required for STRONG scheme'
+                );
+            }
+            $data['OrganizationBin'] = $this->organizationBin;
+        }
+
+        if ($this->debugMode) {
+            $this->logger->debug("Request (payment/return)", $data);
         }
 
         $httpResponse = $this->makeRequest(
@@ -135,28 +157,51 @@ final class Merchant extends AbstractRequest
                 'POST',
                 $this->getBaseUrl('payment/return'),
                 ['Content-type' => 'application/json'],
-                json_encode($this->getPrepareData($data))
+                json_encode($data)
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (payment/return)", $httpResponse);
+        if ($this->debugMode) {
+            $this->logger->debug("Response (payment/return)", $httpResponse);
         }
 
         return RefundResponse::fromResponse($httpResponse);
     }
 
-    private function getDeviceToken(): ?string
+    /**
+     * Отмена счёта на удалённую оплату (только для схемы 3)
+     */
+    public function cancelRemotePayment(int $qrPaymentId): CancelResponse
     {
-        if(!is_null($this->deviceToken)){
-            return $this->deviceToken;
+        if ($this->scheme !== KaspiScheme::STRONG) {
+            throw new \KaspiQrSdk\Exception\KaspiSdkException(
+                'Remote payment cancellation is only available for STRONG scheme'
+            );
         }
 
-        $token = app('CredentialsDictionary')->getByCode('KASPI_DEVICE_TOKEN', app('System')->siteId());
-        if(!$token){
-            $token = env('KASPI_DEVICE_TOKEN');
+        $data = [
+            'DeviceToken' => $this->deviceToken,
+            'QrPaymentId' => $qrPaymentId,
+            'OrganizationBin' => $this->organizationBin,
+        ];
+
+        if ($this->debugMode) {
+            $this->logger->debug("Request (remote/cancel)", $data);
         }
 
-        return $token ?? null;
+        $httpResponse = $this->makeRequest(
+            new Request(
+                'POST',
+                $this->getBaseUrl('remote/cancel'),
+                ['Content-type' => 'application/json'],
+                json_encode($data)
+            )
+        );
+
+        if ($this->debugMode) {
+            $this->logger->debug("Response (remote/cancel)", $httpResponse);
+        }
+
+        return CancelResponse::fromResponse($httpResponse);
     }
 }

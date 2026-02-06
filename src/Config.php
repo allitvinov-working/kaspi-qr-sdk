@@ -1,183 +1,184 @@
 <?php
-
 namespace KaspiQrSdk;
 
 use Psr\Log\LoggerInterface;
 
-/**
- * Конфиг для Kaspi QR SDK
- */
 class Config
 {
-	private string $organizationBin;
-	private string $deviceToken;
-	private string $scheme;
-	private string $apiKey;
-	private string $baseDomain;
-	private ?string $caPath = null;
-	private ?string $certPath = null;
-	private ?string $keyPath = null;
-	private ?string $keyPass = null;
-	private ?LoggerInterface $logger = null;
-	private bool $testMode = false;
+    private ?string $organizationBin = null;
+    private ?string $deviceToken = null;
+    private string $scheme;
+    private ?string $apiKey = null;
+    private string $baseDomain;
+    private ?string $caPath = null;
+    private ?string $certPath = null;
+    private ?string $keyPath = null;
+    private ?string $keyPass = null;
+    private ?LoggerInterface $logger = null;
+    private bool $testMode = false;
+
+    public function __construct(string $scheme, string $baseDomain)
+    {
+        $this->scheme = $scheme;
+        $this->baseDomain = $baseDomain;
+    }
 
     /**
-     * @param string $organizationBin
-     * @param string $deviceToken
-     * @param string $scheme
-     * @param string $apiKey
-     * @param string $baseDomain
+     * Создание конфига для схемы EASY (r1)
      */
-	public function __construct(
-		string $organizationBin,
-		string $deviceToken,
-		string $scheme,
-		string $apiKey,
-		string $baseDomain
-	) {
-		if (empty($organizationBin) || empty($deviceToken) || empty($apiKey) || empty($baseDomain)) {
-			throw new \InvalidArgumentException('organizationBin, deviceToken, apiKey, baseDomain are required');
-		}
-		$this->organizationBin = $organizationBin;
-		$this->deviceToken = $deviceToken;
-		$this->scheme = $scheme;
-		$this->apiKey = $apiKey;
-		$this->baseDomain = $baseDomain;
-	}
-
-	/** @return string */
-	public function getOrganizationBin(): string
-	{
-		return $this->organizationBin;
-	}
-
-	/** @param string $v */
-	public function setOrganizationBin(string $v): void
-	{
-		$this->organizationBin = $v;
-	}
-
-	/** @return string */
-	public function getDeviceToken(): string
-	{
-		return $this->deviceToken;
-	}
-
-	/** @param string $v */
-	public function setDeviceToken(string $v): void
-	{
-		$this->deviceToken = $v;
-	}
+    public static function createEasy(string $apiKey, string $baseDomain): self
+    {
+        $config = new self(KaspiScheme::EASY, $baseDomain);
+        $config->setApiKey($apiKey);
+        return $config;
+    }
 
     /**
-     * @return string
+     * Создание конфига для схемы STANDARD (r2)
      */
-	public function getScheme(): string
-	{
-		return $this->scheme;
-	}
+    public static function createStandard(
+        string $baseDomain,
+        string $certPath,
+        string $keyPath,
+        string $keyPass,
+        ?string $caPath = null
+    ): self {
+        $config = new self(KaspiScheme::STANDARD, $baseDomain);
+        $config->setCertPath($certPath);
+        $config->setKeyPath($keyPath);
+        $config->setKeyPass($keyPass);
+        $config->setCaPath($caPath);
+        return $config;
+    }
 
     /**
-     * @param string $v
+     * Создание конфига для схемы STRONG (r3)
      */
-	public function setScheme(string $v): void
-	{
-		$this->scheme = $v;
-	}
+    public static function createStrong(
+        string $organizationBin,
+        string $baseDomain,
+        string $certPath,
+        string $keyPath,
+        string $keyPass,
+        ?string $caPath = null
+    ): self {
+        $config = new self(KaspiScheme::STRONG, $baseDomain);
+        $config->setOrganizationBin($organizationBin);
+        $config->setCertPath($certPath);
+        $config->setKeyPath($keyPath);
+        $config->setKeyPass($keyPass);
+        $config->setCaPath($caPath);
+        return $config;
+    }
 
-	/** @return string */
-	public function getApiKey(): string
-	{
-		return $this->apiKey;
-	}
+    // ... все геттеры и сеттеры остаются
 
-	/** @param string $v */
-	public function setApiKey(string $v): void
-	{
-		$this->apiKey = $v;
-	}
+    public function getOrganizationBin(): ?string
+    {
+        return $this->organizationBin;
+    }
 
-	/** @return string */
-	public function getBaseDomain(): string
-	{
-		return $this->baseDomain;
-	}
+    public function setOrganizationBin(?string $v): self
+    {
+        $this->organizationBin = $v;
+        return $this;
+    }
 
-	/** @param string $v */
-	public function setBaseDomain(string $v): void
-	{
-		$this->baseDomain = $v;
-	}
+    public function getDeviceToken(): ?string
+    {
+        return $this->deviceToken;
+    }
 
-	/** @return string|null */
-	public function getCaPath(): ?string
-	{
-		return $this->caPath;
-	}
+    public function setDeviceToken(?string $v): self
+    {
+        $this->deviceToken = $v;
+        return $this;
+    }
 
-	/** @param string|null $v */
-	public function setCaPath(?string $v): void
-	{
-		$this->caPath = $v;
-	}
+    public function getScheme(): string
+    {
+        return $this->scheme;
+    }
 
-	/** @return string|null */
-	public function getCertPath(): ?string
-	{
-		return $this->certPath;
-	}
+    public function getApiKey(): ?string
+    {
+        return $this->apiKey;
+    }
 
-	/** @param string|null $v */
-	public function setCertPath(?string $v): void
-	{
-		$this->certPath = $v;
-	}
+    public function setApiKey(?string $v): self
+    {
+        $this->apiKey = $v;
+        return $this;
+    }
 
-	/** @return string|null */
-	public function getKeyPath(): ?string
-	{
-		return $this->keyPath;
-	}
+    public function getBaseDomain(): string
+    {
+        return $this->baseDomain;
+    }
 
-	/** @param string|null $v */
-	public function setKeyPath(?string $v): void
-	{
-		$this->keyPath = $v;
-	}
+    public function getCaPath(): ?string
+    {
+        return $this->caPath;
+    }
 
-	/** @return string|null */
-	public function getKeyPass(): ?string
-	{
-		return $this->keyPass;
-	}
+    public function setCaPath(?string $v): self
+    {
+        $this->caPath = $v;
+        return $this;
+    }
 
-	/** @param string|null $v */
-	public function setKeyPass(?string $v): void
-	{
-		$this->keyPass = $v;
-	}
+    public function getCertPath(): ?string
+    {
+        return $this->certPath;
+    }
 
-	/** @return LoggerInterface|null */
-	public function getLogger(): ?LoggerInterface
-	{
-		return $this->logger;
-	}
+    public function setCertPath(?string $v): self
+    {
+        $this->certPath = $v;
+        return $this;
+    }
 
-	/** @param LoggerInterface|null $v */
-	public function setLogger(?LoggerInterface $v): void
-	{
-		$this->logger = $v;
-	}
+    public function getKeyPath(): ?string
+    {
+        return $this->keyPath;
+    }
 
-	/** @return bool */
-	public function isTestMode(): bool
-	{
-		return $this->testMode;
-	}
+    public function setKeyPath(?string $v): self
+    {
+        $this->keyPath = $v;
+        return $this;
+    }
 
-	/** @param bool $v */
-	public function setTestMode(bool $v): void
-	{
-		$this->testMode = $v;
-	}
-} 
+    public function getKeyPass(): ?string
+    {
+        return $this->keyPass;
+    }
+
+    public function setKeyPass(?string $v): self
+    {
+        $this->keyPass = $v;
+        return $this;
+    }
+
+    public function getLogger(): ?LoggerInterface
+    {
+        return $this->logger;
+    }
+
+    public function setLogger(?LoggerInterface $v): self
+    {
+        $this->logger = $v;
+        return $this;
+    }
+
+    public function isTestMode(): bool
+    {
+        return $this->testMode;
+    }
+
+    public function setTestMode(bool $v): self
+    {
+        $this->testMode = $v;
+        return $this;
+    }
+}
