@@ -3,6 +3,7 @@
 namespace KaspiQrSdk\Request;
 
 use KaspiQrSdk\KaspiScheme;
+use KaspiQrSdk\Exception\KaspiSdkException;
 use KaspiQrSdk\Response\DeviceRegisterResponse;
 use KaspiQrSdk\Response\TradePointResponse;
 use GuzzleHttp\Psr7\Request;
@@ -18,13 +19,19 @@ final class Partner extends AbstractRequest
         $url = 'partner/tradepoints';
 
         // Для STRONG схемы добавляем organizationBin в URL
-        if ($this->scheme === KaspiScheme::STRONG) {
-            if (is_null($this->organizationBin)) {
-                throw new \KaspiQrSdk\Exception\KaspiSdkException(
+        if ($this->getScheme() === KaspiScheme::STRONG) {
+            $organizationBin = $this->getOrganizationBin();
+            if (is_null($organizationBin)) {
+                throw new KaspiSdkException(
                     'OrganizationBin is required for STRONG scheme'
                 );
             }
-            $url .= '/' . $this->organizationBin;
+            $url .= '/' . $organizationBin;
+        }
+
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Request (tradePoints)", ['url' => $url]);
         }
 
         $httpResponse = $this->makeRequest(
@@ -35,8 +42,8 @@ final class Partner extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (tradePoints)", $httpResponse);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (tradePoints)", $httpResponse);
         }
 
         return array_map(
@@ -55,8 +62,9 @@ final class Partner extends AbstractRequest
             'TradePointId' => $tradePointId
         ];
 
-        if ($this->debugMode) {
-            $this->logger->debug("Request (device/register)", $data);
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Request (device/register)", $data);
         }
 
         $httpResponse = $this->makeRequest(
@@ -68,8 +76,8 @@ final class Partner extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (device/register)", $httpResponse);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (device/register)", $httpResponse);
         }
 
         return DeviceRegisterResponse::fromResponse($httpResponse);
@@ -83,17 +91,20 @@ final class Partner extends AbstractRequest
         $data = ['DeviceToken' => $deviceToken];
 
         // Для STRONG схемы добавляем OrganizationBin
-        if ($this->scheme === KaspiScheme::STRONG) {
-            if (is_null($this->organizationBin)) {
-                throw new \KaspiQrSdk\Exception\KaspiSdkException(
+        $scheme = $this->getScheme();
+        if ($scheme === KaspiScheme::STRONG) {
+            $organizationBin = $this->getOrganizationBin();
+            if (is_null($organizationBin)) {
+                throw new KaspiSdkException(
                     'OrganizationBin is required for STRONG scheme'
                 );
             }
-            $data['OrganizationBin'] = $this->organizationBin;
+            $data['OrganizationBin'] = $organizationBin;
         }
 
-        if ($this->debugMode) {
-            $this->logger->debug("Request (device/delete)", $data);
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Request (device/delete)", $data);
         }
 
         $this->makeRequest(
@@ -105,8 +116,8 @@ final class Partner extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (device/delete)", ['success' => true]);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (device/delete)", ['success' => true]);
         }
 
         return true;

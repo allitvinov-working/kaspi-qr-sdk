@@ -5,72 +5,31 @@ use GuzzleHttp\Client;
 use KaspiQrSdk\Request\Merchant;
 use KaspiQrSdk\Request\Partner;
 use KaspiQrSdk\Request\Emulator;
+use KaspiQrSdk\Exception\KaspiSdkException;
 
 final class KaspiQrClient
 {
     public Partner $partner;
     public Merchant $merchant;
-    public Emulator $emulator;
 
     private Config $config;
-    private string $version = 'v01';
-
-    private array $schemeOptions = [
-        KaspiScheme::EASY     => ['port' => 8543],
-        KaspiScheme::STANDARD => ['port' => 8544],
-        KaspiScheme::STRONG   => ['port' => 8545],
-    ];
+    private Client $httpClient;
 
     public function __construct(Config $config)
     {
         $this->config = $config;
         $this->validateConfig();
 
-        $scheme = $config->getScheme();
-        if (!isset($this->schemeOptions[$scheme])) {
-            throw new \InvalidArgumentException("Invalid scheme: {$scheme}");
-        }
-
-        $port = $this->schemeOptions[$scheme]['port'];
-        $baseUrl = $this->collectUrl($config->getBaseDomain(), $port, $scheme);
-
         $clientOptions = array_merge(
-            ['base_uri' => $baseUrl],
-            $this->getHeaders($config),
-            $this->getSslOptions($config)
+            $this->getSslOptions($config),
+            $this->getHeaders($config)
         );
 
-        $client = new Client($clientOptions);
+        $this->httpClient = new Client($clientOptions);
 
-        $this->partner = new Partner(
-            $client,
-            $baseUrl,
-            $scheme,
-            $config->getOrganizationBin(),
-            $config->getDeviceToken(),
-            $config->getApiKey(),
-            $config->getLogger()
-        );
-
-        $this->merchant = new Merchant(
-            $client,
-            $baseUrl,
-            $scheme,
-            $config->getOrganizationBin(),
-            $config->getDeviceToken(),
-            $config->getApiKey(),
-            $config->getLogger()
-        );
-
-        $this->emulator = new Emulator(
-            $client,
-            $baseUrl,
-            $scheme,
-            $config->getOrganizationBin(),
-            $config->getDeviceToken(),
-            $config->getApiKey(),
-            $config->getLogger()
-        );
+        // Создаем объекты запросов, передавая только клиент и конфиг
+        $this->partner = new Partner($this->httpClient, $config);
+        $this->merchant = new Merchant($this->httpClient, $config);
     }
 
     private function validateConfig(): void
@@ -146,18 +105,28 @@ final class KaspiQrClient
         return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex(random_bytes(16)), 4));
     }
 
-    private function collectUrl(string $baseDomain, int $port, string $scheme): string
-    {
-        return sprintf('%s:%d/%s/%s', $baseDomain, $port, $scheme, $this->version);
-    }
-
     /**
      * Обновить deviceToken после регистрации устройства
      */
     public function setDeviceToken(string $deviceToken): void
     {
         $this->config->setDeviceToken($deviceToken);
-        // Пересоздаём merchant с новым токеном
-        // ... или добавить метод setDeviceToken в Merchant
+        // Нет необходимости пересоздавать merchant, так как он использует конфиг
+    }
+
+    /**
+     * Получить текущий конфиг
+     */
+    public function getConfig(): Config
+    {
+        return $this->config;
+    }
+
+    /**
+     * Получить HTTP клиент (может быть полезно для расширенного использования)
+     */
+    public function getHttpClient(): Client
+    {
+        return $this->httpClient;
     }
 }

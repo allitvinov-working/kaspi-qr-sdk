@@ -3,6 +3,7 @@
 namespace KaspiQrSdk\Request;
 
 use KaspiQrSdk\KaspiScheme;
+use KaspiQrSdk\Exception\KaspiSdkException;
 use KaspiQrSdk\Response\CancelResponse;
 use KaspiQrSdk\Response\InvoiceResponse;
 use KaspiQrSdk\Response\PaymentInfoResponse;
@@ -20,8 +21,13 @@ final class Merchant extends AbstractRequest
      */
     public function create(float $amount, ?string $externalId = null, bool $isMobile = false): InvoiceResponse
     {
+        $deviceToken = $this->getDeviceToken();
+        if (!$deviceToken) {
+            throw new KaspiSdkException('DeviceToken is required for creating QR code');
+        }
+
         $data = [
-            'DeviceToken' => $this->deviceToken,
+            'DeviceToken' => $deviceToken,
             'Amount' => $amount,
         ];
 
@@ -29,9 +35,10 @@ final class Merchant extends AbstractRequest
             $data['ExternalId'] = $externalId;
         }
 
-        if ($this->debugMode) {
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $endpoint = $isMobile ? 'qr/create-link' : 'qr/create';
-            $this->logger->debug("Request ({$endpoint})", $data);
+            $logger->debug("Request ({$endpoint})", $data);
         }
 
         $httpResponse = $this->makeRequest(
@@ -43,8 +50,8 @@ final class Merchant extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (qr/create)", $httpResponse);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (qr/create)", $httpResponse);
         }
 
         return InvoiceResponse::fromResponse($httpResponse);
@@ -55,8 +62,9 @@ final class Merchant extends AbstractRequest
      */
     public function getPaymentInfo(int $qrPaymentId): PaymentInfoResponse
     {
-        if ($this->debugMode) {
-            $this->logger->debug("Request (payment/status)", ['qrPaymentId' => $qrPaymentId]);
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Request (payment/status)", ['qrPaymentId' => $qrPaymentId]);
         }
 
         $httpResponse = $this->makeRequest(
@@ -67,8 +75,8 @@ final class Merchant extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (payment/status)", $httpResponse);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (payment/status)", $httpResponse);
         }
 
         return PaymentInfoResponse::fromResponse($httpResponse);
@@ -79,16 +87,22 @@ final class Merchant extends AbstractRequest
      */
     public function getPaymentDetails(int $qrPaymentId): array
     {
+        $deviceToken = $this->getDeviceToken();
+        if (!$deviceToken) {
+            throw new KaspiSdkException('DeviceToken is required for getting payment details');
+        }
+
         $url = sprintf(
             'payment/details?QrPaymentId=%d&DeviceToken=%s',
             $qrPaymentId,
-            $this->deviceToken
+            $deviceToken
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Request (payment/details)", [
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Request (payment/details)", [
                 'qrPaymentId' => $qrPaymentId,
-                'deviceToken' => $this->deviceToken
+                'deviceToken' => $deviceToken
             ]);
         }
 
@@ -100,8 +114,8 @@ final class Merchant extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (payment/details)", $httpResponse);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (payment/details)", $httpResponse);
         }
 
         return $httpResponse['Data'];
@@ -115,21 +129,28 @@ final class Merchant extends AbstractRequest
      */
     public function refund(int $qrPaymentId, float $amount, ?int $qrReturnId = null): RefundResponse
     {
+        $scheme = $this->getScheme();
+
         // Для схемы EASY возврат через API невозможен
-        if ($this->scheme === KaspiScheme::EASY) {
+        if ($scheme === KaspiScheme::EASY) {
             throw new KaspiSdkException(
                 'Refund is not available via API for EASY scheme. Use Kaspi Pay app instead.'
             );
         }
 
+        $deviceToken = $this->getDeviceToken();
+        if (!$deviceToken) {
+            throw new KaspiSdkException('DeviceToken is required for refund');
+        }
+
         $data = [
-            'DeviceToken' => $this->deviceToken,
+            'DeviceToken' => $deviceToken,
             'QrPaymentId' => $qrPaymentId,
             'Amount' => $amount,
         ];
 
         // Для схемы STANDARD требуется QrReturnId (возврат с участием покупателя)
-        if ($this->scheme === KaspiScheme::STANDARD) {
+        if ($scheme === KaspiScheme::STANDARD) {
             if ($qrReturnId === null) {
                 throw new KaspiSdkException(
                     'QrReturnId is required for STANDARD scheme refund'
@@ -139,17 +160,19 @@ final class Merchant extends AbstractRequest
         }
 
         // Для схемы STRONG добавляем OrganizationBin (возврат без участия покупателя)
-        if ($this->scheme === KaspiScheme::STRONG) {
-            if (is_null($this->organizationBin)) {
+        if ($scheme === KaspiScheme::STRONG) {
+            $organizationBin = $this->getOrganizationBin();
+            if (is_null($organizationBin)) {
                 throw new KaspiSdkException(
                     'OrganizationBin is required for STRONG scheme'
                 );
             }
-            $data['OrganizationBin'] = $this->organizationBin;
+            $data['OrganizationBin'] = $organizationBin;
         }
 
-        if ($this->debugMode) {
-            $this->logger->debug("Request (payment/return)", $data);
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Request (payment/return)", $data);
         }
 
         $httpResponse = $this->makeRequest(
@@ -161,8 +184,8 @@ final class Merchant extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (payment/return)", $httpResponse);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (payment/return)", $httpResponse);
         }
 
         return RefundResponse::fromResponse($httpResponse);
@@ -173,20 +196,32 @@ final class Merchant extends AbstractRequest
      */
     public function cancelRemotePayment(int $qrPaymentId): CancelResponse
     {
-        if ($this->scheme !== KaspiScheme::STRONG) {
-            throw new \KaspiQrSdk\Exception\KaspiSdkException(
+        $scheme = $this->getScheme();
+        if ($scheme !== KaspiScheme::STRONG) {
+            throw new KaspiSdkException(
                 'Remote payment cancellation is only available for STRONG scheme'
             );
         }
 
+        $deviceToken = $this->getDeviceToken();
+        if (!$deviceToken) {
+            throw new KaspiSdkException('DeviceToken is required for cancel remote payment');
+        }
+
+        $organizationBin = $this->getOrganizationBin();
+        if (!$organizationBin) {
+            throw new KaspiSdkException('OrganizationBin is required for STRONG scheme');
+        }
+
         $data = [
-            'DeviceToken' => $this->deviceToken,
+            'DeviceToken' => $deviceToken,
             'QrPaymentId' => $qrPaymentId,
-            'OrganizationBin' => $this->organizationBin,
+            'OrganizationBin' => $organizationBin,
         ];
 
-        if ($this->debugMode) {
-            $this->logger->debug("Request (remote/cancel)", $data);
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Request (remote/cancel)", $data);
         }
 
         $httpResponse = $this->makeRequest(
@@ -198,8 +233,8 @@ final class Merchant extends AbstractRequest
             )
         );
 
-        if ($this->debugMode) {
-            $this->logger->debug("Response (remote/cancel)", $httpResponse);
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (remote/cancel)", $httpResponse);
         }
 
         return CancelResponse::fromResponse($httpResponse);
