@@ -84,15 +84,10 @@ abstract class AbstractRequest
     {
         $scheme = $this->getScheme();
         $domain = $this->config->getBaseDomain();
+        $port = $this->config->getPort();
+        $apiVersion = 'v01';
 
-        // Формируем базовый URL в зависимости от схемы
-        if ($scheme === KaspiScheme::EASY) {
-            $baseUrl = "https://{$domain}/api/v1";
-        } else {
-            $baseUrl = "https://{$domain}/api/v2";
-        }
-
-        return $baseUrl . "/" . ltrim($path, '/');
+        return "https://{$domain}:{$port}/{$scheme}/{$apiVersion}/" . ltrim($path, '/');
     }
 
     public function getApiKey(): ?string

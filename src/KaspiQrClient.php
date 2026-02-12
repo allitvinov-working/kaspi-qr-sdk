@@ -111,7 +111,6 @@ final class KaspiQrClient
     public function setDeviceToken(string $deviceToken): void
     {
         $this->config->setDeviceToken($deviceToken);
-        // Нет необходимости пересоздавать merchant, так как он использует конфиг
     }
 
     /**

@@ -16,11 +16,21 @@ class Config
     private ?string $keyPass = null;
     private ?LoggerInterface $logger = null;
     private bool $testMode = false;
+    private const SCHEME_PORTS = [
+        KaspiScheme::EASY     => 8543,
+        KaspiScheme::STANDARD => 8544,
+        KaspiScheme::STRONG   => 8545,
+    ];
 
     public function __construct(string $scheme, string $baseDomain)
     {
         $this->scheme = $scheme;
         $this->baseDomain = $baseDomain;
+    }
+
+    public function getPort(): int
+    {
+        return self::SCHEME_PORTS[$this->scheme] ?? 8543;
     }
 
     /**
