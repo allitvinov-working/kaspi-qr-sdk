@@ -11,6 +11,7 @@ final class KaspiQrClient
 {
     public Partner $partner;
     public Merchant $merchant;
+    public Emulator $emulator;
 
     private Config $config;
     private Client $httpClient;
@@ -30,6 +31,7 @@ final class KaspiQrClient
         // Создаем объекты запросов, передавая только клиент и конфиг
         $this->partner = new Partner($this->httpClient, $config);
         $this->merchant = new Merchant($this->httpClient, $config);
+        $this->emulator = new Emulator($this->httpClient, $config);
     }
 
     private function validateConfig(): void

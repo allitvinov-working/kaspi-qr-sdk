@@ -8,6 +8,7 @@ class Config
     private ?string $organizationBin = null;
     private ?string $deviceToken = null;
     private string $scheme;
+    private string $apiVersion;
     private ?string $apiKey = null;
     private string $baseDomain;
     private ?string $caPath = null;
@@ -22,10 +23,11 @@ class Config
         KaspiScheme::STRONG   => 8545,
     ];
 
-    public function __construct(string $scheme, string $baseDomain)
+    public function __construct(string $scheme, string $baseDomain, string $apiVersion = 'v01')
     {
         $this->scheme = $scheme;
         $this->baseDomain = $baseDomain;
+        $this->apiVersion = $apiVersion;
     }
 
     public function getPort(): int
@@ -81,8 +83,6 @@ class Config
         return $config;
     }
 
-    // ... все геттеры и сеттеры остаются
-
     public function getOrganizationBin(): ?string
     {
         return $this->organizationBin;
@@ -108,6 +108,11 @@ class Config
     public function getScheme(): string
     {
         return $this->scheme;
+    }
+
+    public function getApiVersion(): string
+    {
+        return $this->apiVersion;
     }
 
     public function getApiKey(): ?string

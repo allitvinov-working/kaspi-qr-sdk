@@ -31,8 +31,9 @@ final class Emulator extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
-            $this->getLogger()->debug("Response (health/ping)", $httpResponse);
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
+            $logger->debug("Response (health/ping)", $httpResponse);
         }
 
         return $httpResponse;
@@ -49,7 +50,8 @@ final class Emulator extends AbstractRequest
         $data = [
             'qrPaymentId' => $invoiceId
         ];
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Request (payment/scan)", $data);
         }
 
@@ -62,7 +64,8 @@ final class Emulator extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Response (payment/scan)", $httpResponse);
         }
 
@@ -80,7 +83,8 @@ final class Emulator extends AbstractRequest
         $data = [
             'qrPaymentId' => $invoiceId
         ];
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Request (payment/confirm)", $data);
         }
 
@@ -93,7 +97,8 @@ final class Emulator extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Response (payment/confirm)", $httpResponse);
         }
 
@@ -111,7 +116,8 @@ final class Emulator extends AbstractRequest
         $data = [
             'qrPaymentId' => $invoiceId
         ];
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Request (payment/scanerror)", $data);
         }
 
@@ -124,7 +130,8 @@ final class Emulator extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Response (payment/scanerror)", $httpResponse);
         }
 
@@ -142,7 +149,8 @@ final class Emulator extends AbstractRequest
         $data = [
             'qrPaymentId' => $invoiceId
         ];
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Request (payment/confirmerror)", $data);
         }
 
@@ -155,7 +163,8 @@ final class Emulator extends AbstractRequest
             )
         );
 
-        if($this->debugMode){
+        $logger = $this->getLogger();
+        if ($this->isDebugMode() && $logger) {
             $this->getLogger()->debug("Response (payment/confirmerror)", $httpResponse);
         }
 

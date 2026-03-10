@@ -85,7 +85,7 @@ abstract class AbstractRequest
         $scheme = $this->getScheme();
         $domain = $this->config->getBaseDomain();
         $port = $this->config->getPort();
-        $apiVersion = 'v01';
+        $apiVersion = $this->config->getApiVersion();
 
         return "https://{$domain}:{$port}/{$scheme}/{$apiVersion}/" . ltrim($path, '/');
     }
